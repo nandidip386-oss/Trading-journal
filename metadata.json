@@ -1,0 +1,6 @@
+{
+  "name": "TradeZella Pro - Trading Journal & Analytics",
+  "description": "Professional trading journal and real-time performance analytics dashboard with cloud sync, deep trade review, interactive P&L calendar, and automated trade imports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

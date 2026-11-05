@@ -1,0 +1,250 @@
+{
+  "entities": {
+    "trade": {
+      "title": "Trade",
+      "description": "A single trading journal record belonging to a user",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Unique identifier of the trade"
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "User UID who owns the trade"
+        },
+        "accountId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Identifier of the trading account this trade belongs to"
+        },
+        "accountName": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Display name of the trading account"
+        },
+        "symbol": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Ticker symbol or trading pair"
+        },
+        "side": {
+          "type": "string",
+          "enum": ["LONG", "SHORT"],
+          "description": "Position side"
+        },
+        "assetClass": {
+          "type": "string",
+          "enum": ["STOCKS", "OPTIONS", "CRYPTO", "FOREX", "FUTURES"],
+          "description": "Class of traded instrument"
+        },
+        "entryDate": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "ISO date-time or YYYY-MM-DD of entry"
+        },
+        "exitDate": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "ISO date-time or YYYY-MM-DD of exit"
+        },
+        "entryPrice": {
+          "type": "number",
+          "description": "Average entry execution price"
+        },
+        "exitPrice": {
+          "type": "number",
+          "description": "Average exit execution price"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Total quantity, contracts or shares"
+        },
+        "netPnl": {
+          "type": "number",
+          "description": "Realized net profit or loss in base currency"
+        },
+        "grossPnl": {
+          "type": "number",
+          "description": "Gross profit or loss before fees"
+        },
+        "fees": {
+          "type": "number",
+          "description": "Total commissions and broker fees"
+        },
+        "pnlPercent": {
+          "type": "number",
+          "description": "Percentage gain or loss"
+        },
+        "stopLoss": {
+          "type": "number",
+          "description": "Planned stop loss price"
+        },
+        "takeProfit": {
+          "type": "number",
+          "description": "Planned take profit target price"
+        },
+        "setup": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Playbook setup strategy name"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["WIN", "LOSS", "BREAKEVEN", "OPEN"],
+          "description": "Trade outcome status"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 5000,
+          "description": "Detailed journal entry thesis and notes"
+        },
+        "mistakes": {
+          "type": "string",
+          "maxLength": 256,
+          "description": "Mistakes or discipline tags"
+        },
+        "rating": {
+          "type": "number",
+          "description": "Discipline rating 1 to 5"
+        },
+        "chartUrl": {
+          "type": "string",
+          "maxLength": 1024,
+          "description": "Chart snapshot URL"
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Creation timestamp ISO string"
+        },
+        "updatedAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Update timestamp ISO string"
+        }
+      },
+      "required": ["userId", "symbol", "side", "assetClass", "entryDate", "entryPrice", "quantity", "netPnl", "status"]
+    },
+    "tradingAccount": {
+      "title": "TradingAccount",
+      "description": "Trading account or prop firm account belonging to user",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Unique account identifier"
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Owner user UID"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Account display name e.g. TopStep 150K"
+        },
+        "broker": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Broker or Prop Firm name"
+        },
+        "accountType": {
+          "type": "string",
+          "enum": ["CASH", "MARGIN", "PROP_FIRM", "CRYPTO", "FUTURES"],
+          "description": "Account classification"
+        },
+        "startingBalance": {
+          "type": "number",
+          "description": "Initial account balance"
+        },
+        "currency": {
+          "type": "string",
+          "maxLength": 8,
+          "description": "Account currency"
+        },
+        "color": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Visual accent color hex or tailwind name"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Rules, trailing drawdown limits, or notes"
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Update timestamp"
+        }
+      },
+      "required": ["userId", "name", "startingBalance"]
+    },
+    "userProfile": {
+      "title": "UserProfile",
+      "description": "User profile document with trading preferences",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "User UID matching auth.uid"
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "User account email"
+        },
+        "displayName": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "User display name"
+        },
+        "currency": {
+          "type": "string",
+          "maxLength": 8,
+          "description": "Base currency e.g. USD"
+        },
+        "accountSize": {
+          "type": "number",
+          "description": "Total trading capital"
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Creation timestamp ISO string"
+        },
+        "updatedAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Update timestamp ISO string"
+        }
+      },
+      "required": ["userId", "email"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/trades/{tradeId}": {
+      "schema": { "$ref": "#/entities/trade" },
+      "description": "User trades subcollection storing all journal entries"
+    },
+    "/users/{userId}/accounts/{accountId}": {
+      "schema": { "$ref": "#/entities/tradingAccount" },
+      "description": "User brokerage and prop firm accounts"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/userProfile" },
+      "description": "User profile and account settings"
+    }
+  }
+}
