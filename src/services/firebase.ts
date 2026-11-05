@@ -12,47 +12,59 @@ import {
   doc,
   getDocFromServer
 } from 'firebase/firestore';
-import fallbackConfig from '../../firebase-applet-config.json';
 
 /**
- * Helper to retrieve environment variables from process.env (or import.meta.env in Vite)
- * with graceful fallback to the generated firebase-applet-config.json.
+ * Helper to retrieve environment variables from process.env or Vite's import.meta.env
  */
-function getEnvValue(key: string, viteKey: string, fallback?: string): string {
-  // Check process.env (as injected or configured in vite.config.ts / Node.js)
+function getEnvValue(key: string, viteKey: string, fallback: string = ''): string {
   if (typeof process !== 'undefined' && process.env) {
-    if (process.env[key]) return process.env[key]!;
-    if (process.env[viteKey]) return process.env[viteKey]!;
+    if (process.env[key]) return String(process.env[key]).trim();
+    if (process.env[viteKey]) return String(process.env[viteKey]).trim();
   }
-  // Check Vite's import.meta.env
   if (typeof import.meta !== 'undefined' && (import.meta as unknown as { env?: Record<string, string> }).env) {
     const metaEnv = (import.meta as unknown as { env: Record<string, string> }).env;
-    if (metaEnv[viteKey]) return metaEnv[viteKey];
-    if (metaEnv[key]) return metaEnv[key];
+    if (metaEnv[viteKey]) return String(metaEnv[viteKey]).trim();
+    if (metaEnv[key]) return String(metaEnv[key]).trim();
   }
-  return fallback || '';
+  return fallback;
 }
 
-// Read Firebase credentials from process.env
+// Read Firebase credentials from process.env / import.meta.env
 export const firebaseConfig = {
-  apiKey: getEnvValue('FIREBASE_API_KEY', 'VITE_FIREBASE_API_KEY', fallbackConfig.apiKey),
-  authDomain: getEnvValue('FIREBASE_AUTH_DOMAIN', 'VITE_FIREBASE_AUTH_DOMAIN', fallbackConfig.authDomain),
-  projectId: getEnvValue('FIREBASE_PROJECT_ID', 'VITE_FIREBASE_PROJECT_ID', fallbackConfig.projectId),
-  storageBucket: getEnvValue('FIREBASE_STORAGE_BUCKET', 'VITE_FIREBASE_STORAGE_BUCKET', fallbackConfig.storageBucket),
-  messagingSenderId: getEnvValue('FIREBASE_MESSAGING_SENDER_ID', 'VITE_FIREBASE_MESSAGING_SENDER_ID', fallbackConfig.messagingSenderId),
-  appId: getEnvValue('FIREBASE_APP_ID', 'VITE_FIREBASE_APP_ID', fallbackConfig.appId),
-  measurementId: getEnvValue('FIREBASE_MEASUREMENT_ID', 'VITE_FIREBASE_MEASUREMENT_ID', fallbackConfig.measurementId),
+  apiKey: getEnvValue('FIREBASE_API_KEY', 'VITE_FIREBASE_API_KEY'),
+  authDomain: getEnvValue('FIREBASE_AUTH_DOMAIN', 'VITE_FIREBASE_AUTH_DOMAIN'),
+  projectId: getEnvValue('FIREBASE_PROJECT_ID', 'VITE_FIREBASE_PROJECT_ID'),
+  storageBucket: getEnvValue('FIREBASE_STORAGE_BUCKET', 'VITE_FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: getEnvValue('FIREBASE_MESSAGING_SENDER_ID', 'VITE_FIREBASE_MESSAGING_SENDER_ID'),
+  appId: getEnvValue('FIREBASE_APP_ID', 'VITE_FIREBASE_APP_ID'),
+  measurementId: getEnvValue('FIREBASE_MEASUREMENT_ID', 'VITE_FIREBASE_MEASUREMENT_ID'),
 };
 
 // Database ID for Firestore (custom or default)
 export const firestoreDatabaseId = getEnvValue(
   'FIREBASE_DATABASE_ID',
-  'VITE_FIREBASE_DATABASE_ID',
-  fallbackConfig.firestoreDatabaseId
+  'VITE_FIREBASE_DATABASE_ID'
 );
 
+// Fallback configuration if env vars are completely unset in production
+const activeConfig = firebaseConfig.apiKey ? firebaseConfig : {
+  apiKey: 'dummy-api-key',
+  authDomain: 'dummy-app.firebaseapp.com',
+  projectId: 'dummy-project',
+  storageBucket: 'dummy-app.firebasestorage.app',
+  messagingSenderId: '123456789012',
+  appId: '1:123456789012:web:dummy'
+};
+
+if (!firebaseConfig.apiKey) {
+  console.warn(
+    '[MyFx Journal] Firebase environment variables (VITE_FIREBASE_API_KEY, etc.) are not set. ' +
+    'Please configure them in your Vercel Project Settings > Environment Variables or in your local .env file.'
+  );
+}
+
 // Initialize Firebase App
-const app = initializeApp(firebaseConfig);
+const app = initializeApp(activeConfig);
 
 // Initialize Firestore with specific database ID if specified, otherwise default
 export const db = firestoreDatabaseId && firestoreDatabaseId !== '(default)'
@@ -111,9 +123,6 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
-/**
- * Validate connection to Firestore on initial boot
- */
 export async function testConnection(): Promise<boolean> {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
@@ -123,7 +132,6 @@ export async function testConnection(): Promise<boolean> {
       console.warn('Firebase connection: client appears offline.');
       return false;
     }
-    // Connection test is benign, permission denied on dummy test doc is standard expected behavior
     return true;
   }
 }
