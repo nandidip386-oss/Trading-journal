@@ -12,13 +12,52 @@ import {
   doc,
   getDocFromServer
 } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+import fallbackConfig from '../../firebase-applet-config.json';
 
-// Initialize Firebase
+/**
+ * Helper to retrieve environment variables from process.env (or import.meta.env in Vite)
+ * with graceful fallback to the generated firebase-applet-config.json.
+ */
+function getEnvValue(key: string, viteKey: string, fallback?: string): string {
+  // Check process.env (as injected or configured in vite.config.ts / Node.js)
+  if (typeof process !== 'undefined' && process.env) {
+    if (process.env[key]) return process.env[key]!;
+    if (process.env[viteKey]) return process.env[viteKey]!;
+  }
+  // Check Vite's import.meta.env
+  if (typeof import.meta !== 'undefined' && (import.meta as unknown as { env?: Record<string, string> }).env) {
+    const metaEnv = (import.meta as unknown as { env: Record<string, string> }).env;
+    if (metaEnv[viteKey]) return metaEnv[viteKey];
+    if (metaEnv[key]) return metaEnv[key];
+  }
+  return fallback || '';
+}
+
+// Read Firebase credentials from process.env
+export const firebaseConfig = {
+  apiKey: getEnvValue('FIREBASE_API_KEY', 'VITE_FIREBASE_API_KEY', fallbackConfig.apiKey),
+  authDomain: getEnvValue('FIREBASE_AUTH_DOMAIN', 'VITE_FIREBASE_AUTH_DOMAIN', fallbackConfig.authDomain),
+  projectId: getEnvValue('FIREBASE_PROJECT_ID', 'VITE_FIREBASE_PROJECT_ID', fallbackConfig.projectId),
+  storageBucket: getEnvValue('FIREBASE_STORAGE_BUCKET', 'VITE_FIREBASE_STORAGE_BUCKET', fallbackConfig.storageBucket),
+  messagingSenderId: getEnvValue('FIREBASE_MESSAGING_SENDER_ID', 'VITE_FIREBASE_MESSAGING_SENDER_ID', fallbackConfig.messagingSenderId),
+  appId: getEnvValue('FIREBASE_APP_ID', 'VITE_FIREBASE_APP_ID', fallbackConfig.appId),
+  measurementId: getEnvValue('FIREBASE_MEASUREMENT_ID', 'VITE_FIREBASE_MEASUREMENT_ID', fallbackConfig.measurementId),
+};
+
+// Database ID for Firestore (custom or default)
+export const firestoreDatabaseId = getEnvValue(
+  'FIREBASE_DATABASE_ID',
+  'VITE_FIREBASE_DATABASE_ID',
+  fallbackConfig.firestoreDatabaseId
+);
+
+// Initialize Firebase App
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with specific database ID from config
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+// Initialize Firestore with specific database ID if specified, otherwise default
+export const db = firestoreDatabaseId && firestoreDatabaseId !== '(default)'
+  ? getFirestore(app, firestoreDatabaseId)
+  : getFirestore(app);
 
 // Initialize Auth
 export const auth = getAuth(app);

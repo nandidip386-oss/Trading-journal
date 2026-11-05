@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { User } from '../services/firebase';
 import { TradingAccount } from '../types/trade';
+import { MyFxLogo } from './MyFxLogo';
 
 export type NavTab = 'dashboard' | 'trades' | 'calendar' | 'analytics' | 'accounts';
 
@@ -60,31 +61,20 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-40 bg-[#0c1017]/95 backdrop-blur-md border-b border-slate-800/80 px-3 lg:px-6 py-2.5">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-1.5 sm:gap-3">
         {/* Brand & Logo */}
-        <div className="flex items-center gap-4 lg:gap-6">
+        <div className="flex items-center gap-2 sm:gap-4 lg:gap-6 min-w-0">
           <div
             onClick={() => onTabChange('dashboard')}
-            className="flex items-center gap-2 cursor-pointer group"
+            className="cursor-pointer transition-transform hover:opacity-95 shrink-0"
+            title="MyFX Journal - Dashboard"
           >
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-              <TrendingUp className="w-4 h-4 text-slate-950 font-black stroke-[2.5]" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-base tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
-                  TradeZella
-                </span>
-                <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  PRO
-                </span>
-              </div>
-            </div>
+            <MyFxLogo size="md" />
           </div>
 
           {/* Global Account Switcher Dropdown */}
-          <div className="relative flex items-center">
-            <div className="flex items-center gap-1.5 bg-[#131824] border border-slate-700/80 rounded-xl px-2.5 py-1 text-xs">
+          <div className="relative flex items-center min-w-0">
+            <div className="flex items-center gap-1 sm:gap-1.5 bg-[#131824] border border-slate-700/80 rounded-xl px-2 sm:px-2.5 py-1 text-xs max-w-[125px] sm:max-w-[190px] shadow-sm">
               <span
                 className="w-2 h-2 rounded-full shrink-0"
                 style={{
@@ -94,10 +84,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               <select
                 value={selectedAccountId}
                 onChange={e => onSelectAccountId(e.target.value)}
-                className="bg-transparent text-slate-200 font-semibold focus:outline-none cursor-pointer max-w-[140px] sm:max-w-[190px] truncate pr-1 text-xs"
+                className="bg-transparent text-slate-200 font-semibold focus:outline-none cursor-pointer w-full truncate pr-0.5 text-[11px] sm:text-xs appearance-none"
               >
                 <option value="ALL" className="bg-[#101522] text-emerald-300 font-bold">
-                  All Accounts (Aggregated)
+                  All Accounts
                 </option>
                 {accounts.map(acc => (
                   <option key={acc.id} value={acc.id} className="bg-[#101522] text-slate-200">
@@ -105,6 +95,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </option>
                 ))}
               </select>
+              <ChevronDown className="w-3 h-3 text-slate-400 shrink-0 pointer-events-none -ml-0.5" />
             </div>
           </div>
 
@@ -137,7 +128,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Right Actions: Sync status, Add Trade, Auth */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           {/* Cloud Synchronization Status Pill */}
           <div className="hidden sm:flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border bg-slate-900/60 border-slate-800">
             {isSyncing ? (
@@ -163,10 +154,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* "+ Add Trade" Primary Action */}
           <button
             onClick={onOpenNewTrade}
-            className="flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer"
+            className="flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 px-2 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer shrink-0"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-            <span>Add Trade</span>
+            <span className="hidden sm:inline">Add Trade</span>
+            <span className="sm:hidden">Trade</span>
           </button>
 
           {/* User Sign In / Profile */}

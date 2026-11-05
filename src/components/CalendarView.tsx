@@ -107,7 +107,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               </h1>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              TradeZella daily performance heatmap • Click any day for detailed execution review
+              MyFX Journal daily performance heatmap • Click any day for detailed execution review
             </p>
           </div>
 

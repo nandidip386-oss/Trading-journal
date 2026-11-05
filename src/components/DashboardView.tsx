@@ -220,20 +220,35 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Average Win / Loss */}
-        <div className="bg-[#101522] rounded-xl p-4 border border-slate-800/90 relative overflow-hidden group hover:border-slate-700 transition-colors shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-medium uppercase tracking-wider">Avg Win / Loss</span>
-            <div className="p-1.5 rounded-lg bg-sky-500/10 text-sky-400">
-              <DollarSign className="w-4 h-4" />
+        <div className="bg-[#101522] rounded-xl p-3.5 sm:p-4 border border-slate-800/90 relative overflow-hidden group hover:border-slate-700 transition-colors shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-slate-400 mb-1.5 sm:mb-2">
+              <span className="text-[11px] sm:text-xs font-medium uppercase tracking-wider truncate">Avg Win / Loss</span>
+              <div className="p-1 sm:p-1.5 rounded-lg bg-sky-500/10 text-sky-400 shrink-0">
+                <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-1.5 font-mono-numbers">
+              <div className="flex items-baseline gap-1 min-w-0">
+                <span className="text-[9px] uppercase font-bold text-emerald-500/70 sm:hidden">W:</span>
+                <span className="text-base sm:text-lg font-bold text-emerald-400 truncate">
+                  {formatCurrency(metrics.avgWin, true, 0, displayCurrency)}
+                </span>
+              </div>
+              <span className="hidden sm:inline text-slate-600 font-normal shrink-0">/</span>
+              <div className="flex items-baseline gap-1 min-w-0">
+                <span className="text-[9px] uppercase font-bold text-rose-500/70 sm:hidden">L:</span>
+                <span className="text-base sm:text-lg font-bold text-rose-400 truncate">
+                  {formatCurrency(-metrics.avgLoss, true, 0, displayCurrency)}
+                </span>
+              </div>
             </div>
           </div>
-          <div className="text-lg font-bold text-slate-200 font-mono-numbers flex items-center gap-1.5">
-            <span className="text-emerald-400">{formatCurrency(metrics.avgWin, true, 0, displayCurrency)}</span>
-            <span className="text-slate-600">/</span>
-            <span className="text-rose-400">{formatCurrency(-metrics.avgLoss, true, 0, displayCurrency)}</span>
-          </div>
-          <div className="mt-2 text-[11px] text-slate-400">
-            Ratio: <strong className="text-slate-300 font-mono-numbers">{metrics.winLossRatio.toFixed(2)} : 1</strong>
+          <div className="mt-2 pt-1.5 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400">
+            <span className="text-[10px] sm:text-[11px] text-slate-400">Ratio:</span>
+            <span className="px-1.5 py-0.5 rounded bg-slate-800/80 border border-slate-700/60 font-semibold text-slate-200 text-[10px] sm:text-[11px] font-mono-numbers">
+              {metrics.winLossRatio.toFixed(2)} : 1
+            </span>
           </div>
         </div>
 

@@ -36,7 +36,7 @@ export default function App() {
   const [selectedAccountId, setSelectedAccountId] = useState<string>('ALL');
   const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>(() => {
     try {
-      const saved = localStorage.getItem('tradezella_currency');
+      const saved = localStorage.getItem('myfx_currency') || localStorage.getItem('tradezella_currency');
       return (saved === 'INR' || saved === 'USD') ? (saved as CurrencyCode) : 'USD';
     } catch {
       return 'USD';
@@ -47,7 +47,7 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('tradezella_currency', displayCurrency);
+      localStorage.setItem('myfx_currency', displayCurrency);
     } catch {}
   }, [displayCurrency]);
 
