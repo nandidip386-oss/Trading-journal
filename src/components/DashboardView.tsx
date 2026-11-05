@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Trade, TradeMetrics, EquityPoint, CurrencyCode } from '../types/trade';
 import { calculateEquityCurve, aggregateDailyStats, formatCurrency } from '../utils/tradeMetrics';
+import { UsdInrRatePill } from './UsdInrRatePill';
 
 interface DashboardViewProps {
   trades: Trade[];
@@ -27,6 +28,8 @@ interface DashboardViewProps {
   onAddTrade: () => void;
   displayCurrency?: CurrencyCode;
   onCurrencyChange?: (currency: CurrencyCode) => void;
+  usdToInrRate?: number;
+  onUsdToInrRateChange?: (rate: number) => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -38,7 +41,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onLoadDemoTrades,
   onAddTrade,
   displayCurrency = 'USD',
-  onCurrencyChange
+  onCurrencyChange,
+  usdToInrRate,
+  onUsdToInrRateChange
 }) => {
   const [timeframe, setTimeframe] = useState<'ALL' | '30D' | '90D' | '7D'>('ALL');
   const [hoveredPoint, setHoveredPoint] = useState<EquityPoint | null>(null);
@@ -90,26 +95,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   return (
     <div className="space-y-6 pb-12">
       {/* Welcome Banner / Overview Status */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-[#101726] to-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-[#101726] to-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-80 h-full bg-emerald-500/5 blur-3xl pointer-events-none" />
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-1">
-            <span className="flex h-2 w-2 rounded-full bg-emerald-400" />
-            <h1 className="text-xl font-bold tracking-tight text-white">Performance Overview</h1>
+            <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white">Performance Overview</h1>
           </div>
-          <p className="text-xs text-slate-400">
-            Real-time synchronization across your devices • Tracking {metrics.totalTrades} journaled executions
+          <p className="text-[11px] sm:text-xs text-slate-400">
+            Real-time sync across devices • Tracking {metrics.totalTrades} journaled executions
           </p>
         </div>
 
-        <div className="flex items-center flex-wrap gap-2.5 relative z-10">
+        <div className="flex items-center flex-wrap gap-2 relative z-10 w-full xl:w-auto justify-start xl:justify-end">
           {/* Currency Switcher Mode Toggle */}
-          <div className="flex items-center gap-1.5 bg-[#131824] p-1 rounded-xl border border-slate-700/80 shadow-sm">
+          <div className="flex items-center gap-1 bg-[#131824] p-1 rounded-xl border border-slate-700/80 shadow-sm">
             <button
               type="button"
               onClick={() => onCurrencyChange?.('USD')}
               title="Display dashboard in US Dollars ($)"
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 displayCurrency === 'USD'
                   ? 'bg-emerald-500 text-slate-950 shadow-md'
                   : 'text-slate-400 hover:text-slate-200'
@@ -121,7 +126,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               type="button"
               onClick={() => onCurrencyChange?.('INR')}
               title="Display dashboard in Indian Rupees (₹) with auto-conversion"
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 displayCurrency === 'INR'
                   ? 'bg-purple-500 text-white shadow-md'
                   : 'text-slate-400 hover:text-slate-200'
@@ -131,26 +136,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </button>
           </div>
 
-          <span className="hidden sm:inline-flex text-[11px] text-slate-400 font-mono-numbers px-2.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800">
-            1 USD = ₹86.50
-          </span>
+          <UsdInrRatePill
+            rate={usdToInrRate}
+            onRateChange={onUsdToInrRateChange}
+            className="inline-flex"
+          />
 
           {trades.length === 0 ? (
             onLoadDemoTrades && (
               <button
                 onClick={onLoadDemoTrades}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-semibold hover:bg-emerald-500/20 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-semibold hover:bg-emerald-500/20 transition-all cursor-pointer shadow-sm"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Load Demo Trades</span>
+                <span>Load Demo</span>
               </button>
             )
           ) : (
             <button
               onClick={onNavigateToCalendar}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-200 border border-slate-700 text-xs font-semibold hover:bg-slate-700 hover:text-white transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 text-xs font-semibold hover:bg-slate-700 hover:text-white transition-all cursor-pointer shadow-sm"
             >
-              <span>View P&L Calendar</span>
+              <span>Calendar</span>
               <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
             </button>
           )}

@@ -15,7 +15,7 @@ import {
 } from './services/firebase';
 import { tradeService } from './services/tradeService';
 import { Trade, TradeMetrics, TradingAccount, CurrencyCode } from './types/trade';
-import { calculateTradeMetrics, normalizeTrades } from './utils/tradeMetrics';
+import { calculateTradeMetrics, normalizeTrades, DEFAULT_USD_INR_RATE } from './utils/tradeMetrics';
 import { Navbar, NavTab } from './components/Navbar';
 import { DashboardView } from './components/DashboardView';
 import { TradeLogView } from './components/TradeLogView';
@@ -42,6 +42,16 @@ export default function App() {
       return 'USD';
     }
   });
+  const [usdToInrRate, setUsdToInrRate] = useState<number>(() => {
+    try {
+      const savedRate = localStorage.getItem('myfx_usd_inr_rate');
+      if (savedRate) {
+        const parsed = parseFloat(savedRate);
+        if (!isNaN(parsed) && parsed > 0) return parsed;
+      }
+    } catch {}
+    return DEFAULT_USD_INR_RATE;
+  });
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
 
@@ -50,6 +60,12 @@ export default function App() {
       localStorage.setItem('myfx_currency', displayCurrency);
     } catch {}
   }, [displayCurrency]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('myfx_usd_inr_rate', usdToInrRate.toString());
+    } catch {}
+  }, [usdToInrRate]);
 
   // Modals
   const [isTradeModalOpen, setIsTradeModalOpen] = useState(false);
@@ -163,8 +179,8 @@ export default function App() {
 
   // Normalized to displayCurrency (USD or INR) for unified metrics, curves, and charts
   const normalizedActiveTrades = useMemo(() => {
-    return normalizeTrades(activeTrades, displayCurrency);
-  }, [activeTrades, displayCurrency]);
+    return normalizeTrades(activeTrades, displayCurrency, usdToInrRate);
+  }, [activeTrades, displayCurrency, usdToInrRate]);
 
   // Performance metrics computed in real-time on normalized active trades
   const metrics: TradeMetrics = useMemo(() => {
@@ -175,10 +191,22 @@ export default function App() {
   const handleGoogleSignIn = async () => {
     try {
       setIsSyncing(true);
+      setSyncError(null);
       await signInWithPopup(auth, googleProvider);
     } catch (err: any) {
       console.error('Sign-in error:', err);
-      // Benign if popup was closed by user
+      if (err?.code === 'auth/popup-closed-by-user') {
+        // User closed popup, no error needed
+      } else if (err?.code === 'auth/unauthorized-domain') {
+        setSyncError(
+          'Google Sign-In failed: This deployment domain is not authorized in Firebase Console. ' +
+          'Please add your deployed URL under Firebase Console > Authentication > Settings > Authorized domains.'
+        );
+      } else {
+        setSyncError(
+          `Google Sign-In failed: ${err?.message || 'Please check your Firebase environment variables in Vercel settings.'}`
+        );
+      }
     } finally {
       setIsSyncing(false);
     }
@@ -357,6 +385,8 @@ export default function App() {
             onAddTrade={handleOpenNewTrade}
             displayCurrency={displayCurrency}
             onCurrencyChange={setDisplayCurrency}
+            usdToInrRate={usdToInrRate}
+            onUsdToInrRateChange={setUsdToInrRate}
           />
         )}
 
@@ -390,6 +420,8 @@ export default function App() {
             metrics={metrics}
             displayCurrency={displayCurrency}
             onCurrencyChange={setDisplayCurrency}
+            usdToInrRate={usdToInrRate}
+            onUsdToInrRateChange={setUsdToInrRate}
           />
         )}
 
@@ -415,6 +447,7 @@ export default function App() {
         userId={user ? user.uid : null}
         accounts={accounts}
         defaultAccountId={selectedAccountId !== 'ALL' ? selectedAccountId : accounts[0]?.id}
+        usdToInrRate={usdToInrRate}
       />
 
       {/* Trade Detailed Review Modal */}
@@ -424,6 +457,7 @@ export default function App() {
         onClose={() => setIsDetailModalOpen(false)}
         onEdit={handleEditTrade}
         onDelete={handleDeleteTrade}
+        usdToInrRate={usdToInrRate}
       />
     </div>
   );

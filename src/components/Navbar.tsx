@@ -19,6 +19,7 @@ import {
 import { User } from '../services/firebase';
 import { TradingAccount } from '../types/trade';
 import { MyFxLogo } from './MyFxLogo';
+import { PWAInstallButton } from './PWAInstallButton';
 
 export type NavTab = 'dashboard' | 'trades' | 'calendar' | 'analytics' | 'accounts';
 
@@ -74,9 +75,9 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Global Account Switcher Dropdown */}
           <div className="relative flex items-center min-w-0">
-            <div className="flex items-center gap-1 sm:gap-1.5 bg-[#131824] border border-slate-700/80 rounded-xl px-2 sm:px-2.5 py-1 text-xs max-w-[125px] sm:max-w-[190px] shadow-sm">
+            <div className="flex items-center gap-1.5 bg-[#131824] border border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs max-w-[170px] sm:max-w-[260px] md:max-w-[320px] shadow-sm">
               <span
-                className="w-2 h-2 rounded-full shrink-0"
+                className="w-2.5 h-2.5 rounded-full shrink-0"
                 style={{
                   backgroundColor: selectedAccountId === 'ALL' ? '#10b981' : (selectedAccount?.color || '#0ea5e9')
                 }}
@@ -87,7 +88,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="bg-transparent text-slate-200 font-semibold focus:outline-none cursor-pointer w-full truncate pr-0.5 text-[11px] sm:text-xs appearance-none"
               >
                 <option value="ALL" className="bg-[#101522] text-emerald-300 font-bold">
-                  All Accounts
+                  All Accounts ({accounts.length})
                 </option>
                 {accounts.map(acc => (
                   <option key={acc.id} value={acc.id} className="bg-[#101522] text-slate-200">
@@ -95,7 +96,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </option>
                 ))}
               </select>
-              <ChevronDown className="w-3 h-3 text-slate-400 shrink-0 pointer-events-none -ml-0.5" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0 pointer-events-none -ml-0.5" />
             </div>
           </div>
 
@@ -151,6 +152,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </div>
 
+          {/* PWA Download / Install App Button */}
+          <PWAInstallButton />
+
           {/* "+ Add Trade" Primary Action */}
           <button
             onClick={onOpenNewTrade}
@@ -161,8 +165,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="sm:hidden">Trade</span>
           </button>
 
-          {/* User Sign In / Profile */}
-          {user ? (
+          {/* Logged in User Profile */}
+          {user && (
             <div className="flex items-center gap-1.5 pl-1 border-l border-slate-800">
               <div className="flex items-center gap-2">
                 {user.photoURL ? (
@@ -185,20 +189,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={onSignOut}
                 title="Sign Out"
-                className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
               </button>
             </div>
-          ) : (
-            <button
-              onClick={onSignIn}
-              className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all hover:border-slate-600 cursor-pointer"
-            >
-              <LogIn className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">Sign In with Google</span>
-              <span className="sm:hidden">Sign In</span>
-            </button>
           )}
         </div>
       </div>

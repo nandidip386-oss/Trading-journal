@@ -23,6 +23,7 @@ interface TradeDetailModalProps {
   onClose: () => void;
   onEdit: (trade: Trade) => void;
   onDelete: (tradeId: string) => void;
+  usdToInrRate?: number;
 }
 
 export const TradeDetailModal: React.FC<TradeDetailModalProps> = ({
@@ -30,7 +31,8 @@ export const TradeDetailModal: React.FC<TradeDetailModalProps> = ({
   isOpen,
   onClose,
   onEdit,
-  onDelete
+  onDelete,
+  usdToInrRate = DEFAULT_USD_INR_RATE
 }) => {
   if (!isOpen || !trade) return null;
 
@@ -38,7 +40,7 @@ export const TradeDetailModal: React.FC<TradeDetailModalProps> = ({
   const isLoss = trade.status === 'LOSS';
   const tradeCurr: CurrencyCode = trade.currency || 'USD';
   const altCurr: CurrencyCode = tradeCurr === 'INR' ? 'USD' : 'INR';
-  const convertedPnl = convertCurrency(trade.netPnl, tradeCurr, altCurr);
+  const convertedPnl = convertCurrency(trade.netPnl, tradeCurr, altCurr, usdToInrRate);
 
   // Calculate R-Multiple if stop loss was defined
   let rMultiple: number | null = null;
@@ -168,7 +170,7 @@ export const TradeDetailModal: React.FC<TradeDetailModalProps> = ({
                   {formatCurrency(trade.netPnl, true, 2, tradeCurr)}
                 </span>
                 <span className="text-xs text-slate-400 font-sans font-medium">
-                  (≈ {formatCurrency(convertedPnl, true, 2, altCurr)} at ₹86.50)
+                  (≈ {formatCurrency(convertedPnl, true, 2, altCurr)} at 1 USD = ₹{usdToInrRate.toFixed(2)})
                 </span>
                 {trade.pnlPercent !== undefined && (
                   <span className={`text-sm font-bold font-mono-numbers ${

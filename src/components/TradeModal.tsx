@@ -20,6 +20,7 @@ interface TradeModalProps {
   userId: string | null;
   accounts: TradingAccount[];
   defaultAccountId?: string;
+  usdToInrRate?: number;
 }
 
 export const TradeModal: React.FC<TradeModalProps> = ({
@@ -29,7 +30,8 @@ export const TradeModal: React.FC<TradeModalProps> = ({
   onSave,
   userId,
   accounts,
-  defaultAccountId
+  defaultAccountId,
+  usdToInrRate = DEFAULT_USD_INR_RATE
 }) => {
   const [accountId, setAccountId] = useState('');
   const [currency, setCurrency] = useState<CurrencyCode>('USD');
@@ -437,9 +439,9 @@ export const TradeModal: React.FC<TradeModalProps> = ({
                 <span className="text-xs font-medium">({calculatedRoi >= 0 ? '+' : ''}{calculatedRoi.toFixed(2)}%)</span>
                 <span className="text-[11px] text-slate-400 font-sans ml-1">
                   (≈ {currency === 'INR'
-                      ? formatCurrency(convertCurrency(calculatedNetPnl, 'INR', 'USD'), true, 2, 'USD')
-                      : formatCurrency(convertCurrency(calculatedNetPnl, 'USD', 'INR'), true, 2, 'INR')
-                    } at 1 USD = ₹86.50)
+                      ? formatCurrency(convertCurrency(calculatedNetPnl, 'INR', 'USD', usdToInrRate), true, 2, 'USD')
+                      : formatCurrency(convertCurrency(calculatedNetPnl, 'USD', 'INR', usdToInrRate), true, 2, 'INR')
+                    } at 1 USD = ₹{usdToInrRate.toFixed(2)})
                 </span>
               </div>
               <span className={`px-2 py-0.5 rounded text-[10px] font-bold self-start sm:self-auto ${

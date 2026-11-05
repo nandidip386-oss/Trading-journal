@@ -19,19 +19,24 @@ import {
   calculateMistakeAnalysis,
   formatCurrency
 } from '../utils/tradeMetrics';
+import { UsdInrRatePill } from './UsdInrRatePill';
 
 interface AnalyticsViewProps {
   trades: Trade[];
   metrics: TradeMetrics;
   displayCurrency?: CurrencyCode;
   onCurrencyChange?: (currency: CurrencyCode) => void;
+  usdToInrRate?: number;
+  onUsdToInrRateChange?: (rate: number) => void;
 }
 
 export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   trades,
   metrics,
   displayCurrency = 'USD',
-  onCurrencyChange
+  onCurrencyChange,
+  usdToInrRate,
+  onUsdToInrRateChange
 }) => {
   const setupAnalysis = calculateSetupAnalysis(trades);
   const assetAnalysis = calculateAssetAnalysis(trades);
@@ -84,9 +89,11 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
             </button>
           </div>
 
-          <span className="hidden sm:inline-flex text-[11px] text-slate-400 font-mono-numbers px-2.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800">
-            1 USD = ₹86.50
-          </span>
+          <UsdInrRatePill
+            rate={usdToInrRate}
+            onRateChange={onUsdToInrRateChange}
+            className="hidden sm:inline-flex"
+          />
         </div>
       </div>
 
