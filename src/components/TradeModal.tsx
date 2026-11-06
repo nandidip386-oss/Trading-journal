@@ -7,7 +7,8 @@ import {
   Star,
   Sparkles,
   Link as LinkIcon,
-  HelpCircle
+  HelpCircle,
+  Plus
 } from 'lucide-react';
 import { Trade, AssetClass, TradeSide, TradeStatus, TradingAccount, CurrencyCode } from '../types/trade';
 import { formatCurrency, convertCurrency, DEFAULT_USD_INR_RATE } from '../utils/tradeMetrics';
@@ -44,9 +45,11 @@ export const TradeModal: React.FC<TradeModalProps> = ({
   const [exitPrice, setExitPrice] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
   const [fees, setFees] = useState<number>(1.5);
+  const [manualPnl, setManualPnl] = useState<string>('0.00');
+  const [tradeStatus, setTradeStatus] = useState<TradeStatus>('WIN');
   const [stopLoss, setStopLoss] = useState<string>('');
   const [takeProfit, setTakeProfit] = useState<string>('');
-  const [setup, setSetup] = useState('Breakout');
+  const [setup, setSetup] = useState('');
   const [mistakes, setMistakes] = useState('');
   const [rating, setRating] = useState<number>(5);
   const [chartUrl, setChartUrl] = useState('');
@@ -54,19 +57,46 @@ export const TradeModal: React.FC<TradeModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Setup options
-  const setupPresets = [
-    'VWAP Bounce',
-    'Breakout',
-    'Breakdown',
-    'Flag Pattern',
-    'Liquidity Sweep',
-    'Opening Drive',
-    'Reversal',
-    'Mean Reversion',
-    'Gap & Go',
-    'Support / Resistance'
-  ];
+  // Custom Strategy Shortcuts state (persisted in localStorage)
+  const [customStrategies, setCustomStrategies] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('myfx_custom_strategies');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [newStrategyInput, setNewStrategyInput] = useState('');
+  const [isAddingStrategy, setIsAddingStrategy] = useState(false);
+
+  const saveStrategies = (list: string[]) => {
+    setCustomStrategies(list);
+    try {
+      localStorage.setItem('myfx_custom_strategies', JSON.stringify(list));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleAddStrategy = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = newStrategyInput.trim();
+    if (!trimmed) return;
+    if (!customStrategies.includes(trimmed)) {
+      const updated = [...customStrategies, trimmed];
+      saveStrategies(updated);
+    }
+    setSetup(trimmed);
+    setNewStrategyInput('');
+    setIsAddingStrategy(false);
+  };
+
+  const handleRemoveStrategy = (strategyToRemove: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = customStrategies.filter(s => s !== strategyToRemove);
+    saveStrategies(updated);
+  };
 
   const mistakePresets = [
     'FOMO',
@@ -93,9 +123,11 @@ export const TradeModal: React.FC<TradeModalProps> = ({
       setExitPrice(tradeToEdit.exitPrice !== undefined ? String(tradeToEdit.exitPrice) : '');
       setQuantity(tradeToEdit.quantity);
       setFees(tradeToEdit.fees || 0);
+      setManualPnl(tradeToEdit.netPnl !== undefined ? String(tradeToEdit.netPnl) : '0.00');
+      setTradeStatus(tradeToEdit.status || 'WIN');
       setStopLoss(tradeToEdit.stopLoss !== undefined ? String(tradeToEdit.stopLoss) : '');
       setTakeProfit(tradeToEdit.takeProfit !== undefined ? String(tradeToEdit.takeProfit) : '');
-      setSetup(tradeToEdit.setup || 'Breakout');
+      setSetup(tradeToEdit.setup || '');
       setMistakes(tradeToEdit.mistakes || '');
       setRating(tradeToEdit.rating || 5);
       setChartUrl(tradeToEdit.chartUrl || '');
@@ -117,9 +149,11 @@ export const TradeModal: React.FC<TradeModalProps> = ({
       setExitPrice('');
       setQuantity(100);
       setFees(1.50);
+      setManualPnl('150.00');
+      setTradeStatus('WIN');
       setStopLoss('');
       setTakeProfit('');
-      setSetup('VWAP Bounce');
+      setSetup(customStrategies[0] || '');
       setMistakes('');
       setRating(5);
       setChartUrl('');
@@ -132,28 +166,12 @@ export const TradeModal: React.FC<TradeModalProps> = ({
 
   const currSymbol = currency === 'INR' ? '₹' : '$';
 
-  // Real-time calculation of Net P&L and ROI
+  // Real-time calculation helper
   const parsedExitPrice = exitPrice !== '' ? parseFloat(exitPrice) : undefined;
-  let calculatedNetPnl = 0;
-  let calculatedGrossPnl = 0;
-  let calculatedRoi = 0;
-  let calculatedStatus: TradeStatus = 'OPEN';
-
-  if (parsedExitPrice !== undefined && !isNaN(parsedExitPrice)) {
-    if (side === 'LONG') {
-      calculatedGrossPnl = (parsedExitPrice - entryPrice) * quantity;
-    } else {
-      calculatedGrossPnl = (entryPrice - parsedExitPrice) * quantity;
-    }
-    calculatedNetPnl = calculatedGrossPnl - (fees || 0);
-    const invested = entryPrice * quantity;
-    if (invested > 0) {
-      calculatedRoi = (calculatedNetPnl / invested) * 100;
-    }
-    if (calculatedNetPnl > 0.01) calculatedStatus = 'WIN';
-    else if (calculatedNetPnl < -0.01) calculatedStatus = 'LOSS';
-    else calculatedStatus = 'BREAKEVEN';
-  }
+  const parsedManualPnl = manualPnl !== '' ? parseFloat(manualPnl) : 0;
+  const finalNetPnl = isNaN(parsedManualPnl) ? 0 : parsedManualPnl;
+  const invested = entryPrice * quantity;
+  const calculatedRoi = invested > 0 ? (finalNetPnl / invested) * 100 : 0;
 
   const handleToggleMistakeTag = (tag: string) => {
     const list = mistakes.split(',').map(s => s.trim()).filter(Boolean);
@@ -182,6 +200,12 @@ export const TradeModal: React.FC<TradeModalProps> = ({
     try {
       const nowIso = new Date().toISOString();
       const selectedAcc = accounts.find(a => a.id === accountId);
+      const parsedNetPnlNum = parseFloat(manualPnl);
+      const finalPnlVal = isNaN(parsedNetPnlNum) ? 0 : parsedNetPnlNum;
+      const parsedFees = Number(fees) || 0;
+      const totalInvested = Number(entryPrice) * Number(quantity);
+      const roiVal = totalInvested > 0 ? Number(((finalPnlVal / totalInvested) * 100).toFixed(2)) : 0;
+
       const finalTrade: Trade = {
         id: tradeToEdit ? tradeToEdit.id : `trade_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         userId: tradeToEdit ? tradeToEdit.userId : (userId || 'local_user'),
@@ -196,14 +220,14 @@ export const TradeModal: React.FC<TradeModalProps> = ({
         entryPrice: Number(entryPrice),
         exitPrice: parsedExitPrice,
         quantity: Number(quantity),
-        netPnl: Number(calculatedNetPnl.toFixed(2)),
-        grossPnl: Number(calculatedGrossPnl.toFixed(2)),
-        fees: Number(fees),
-        pnlPercent: Number(calculatedRoi.toFixed(2)),
+        netPnl: Number(finalPnlVal.toFixed(2)),
+        grossPnl: Number((finalPnlVal + parsedFees).toFixed(2)),
+        fees: parsedFees,
+        pnlPercent: roiVal,
         stopLoss: stopLoss !== '' ? parseFloat(stopLoss) : undefined,
         takeProfit: takeProfit !== '' ? parseFloat(takeProfit) : undefined,
         setup,
-        status: calculatedStatus,
+        status: tradeStatus,
         mistakes: mistakes.trim(),
         rating,
         chartUrl: chartUrl.trim(),
@@ -424,33 +448,121 @@ export const TradeModal: React.FC<TradeModalProps> = ({
             </div>
           </div>
 
-          {/* Real-time Calculated P&L Summary Ribbon with Auto Currency Conversion */}
-          {parsedExitPrice !== undefined && (
-            <div className={`p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono-numbers ${
-              calculatedNetPnl >= 0
-                ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
-                : 'bg-rose-950/20 border-rose-500/30 text-rose-300'
-            }`}>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-sans font-semibold">Live Calculated P&L:</span>
-                <span className="text-base font-extrabold">
-                  {formatCurrency(calculatedNetPnl, true, 2, currency)}
+          {/* Manual Net P&L & Trade Outcome Section */}
+          <div className="p-3.5 rounded-xl bg-[#0c1017] border border-slate-700/80 space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Manual Net Profit / Loss ({currSymbol}) *</span>
+                </label>
+                <p className="text-[11px] text-slate-400">
+                  Type your exact trade P&L directly from your broker statement.
+                </p>
+              </div>
+
+              {/* Optional Auto-estimate helper button */}
+              {parsedExitPrice !== undefined && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const ep = parsedExitPrice || 0;
+                    const estGross = side === 'LONG' ? (ep - entryPrice) * quantity : (entryPrice - ep) * quantity;
+                    const estNet = estGross - (fees || 0);
+                    setManualPnl(estNet.toFixed(2));
+                    if (estNet > 0) setTradeStatus('WIN');
+                    else if (estNet < 0) setTradeStatus('LOSS');
+                    else setTradeStatus('BREAKEVEN');
+                  }}
+                  className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-500/20 transition-all cursor-pointer"
+                >
+                  ⚡ Auto-Fill from Prices
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+              {/* Direct P&L Input */}
+              <div className="relative flex items-center">
+                <span className={`absolute left-3 text-sm font-extrabold font-mono ${
+                  finalNetPnl > 0 ? 'text-emerald-400' : finalNetPnl < 0 ? 'text-rose-400' : 'text-slate-400'
+                }`}>
+                  {currSymbol}
                 </span>
-                <span className="text-xs font-medium">({calculatedRoi >= 0 ? '+' : ''}{calculatedRoi.toFixed(2)}%)</span>
-                <span className="text-[11px] text-slate-400 font-sans ml-1">
+                <input
+                  type="number"
+                  step="any"
+                  required
+                  value={manualPnl}
+                  onChange={e => {
+                    const valStr = e.target.value;
+                    setManualPnl(valStr);
+                    const num = parseFloat(valStr);
+                    if (!isNaN(num)) {
+                      if (num > 0) setTradeStatus('WIN');
+                      else if (num < 0) setTradeStatus('LOSS');
+                      else setTradeStatus('BREAKEVEN');
+                    }
+                  }}
+                  placeholder="e.g. 250.00 or -120.00"
+                  className="w-full bg-[#131824] border border-slate-700/80 focus:border-emerald-500 rounded-xl pl-8 pr-3 py-2 text-sm font-bold font-mono-numbers text-white outline-none"
+                />
+              </div>
+
+              {/* Trade Outcome Status Selector */}
+              <div className="flex items-center gap-1 bg-[#131824] p-1 rounded-xl border border-slate-700/80">
+                {(['WIN', 'LOSS', 'BREAKEVEN', 'OPEN'] as TradeStatus[]).map(st => {
+                  const isActive = tradeStatus === st;
+                  let colorCls = 'text-slate-400 hover:text-slate-200';
+                  if (isActive) {
+                    if (st === 'WIN') colorCls = 'bg-emerald-500 text-slate-950 font-extrabold shadow-sm';
+                    if (st === 'LOSS') colorCls = 'bg-rose-500 text-white font-extrabold shadow-sm';
+                    if (st === 'BREAKEVEN') colorCls = 'bg-slate-700 text-slate-100 font-extrabold shadow-sm';
+                    if (st === 'OPEN') colorCls = 'bg-amber-500 text-slate-950 font-extrabold shadow-sm';
+                  }
+                  return (
+                    <button
+                      type="button"
+                      key={st}
+                      onClick={() => {
+                        setTradeStatus(st);
+                        const num = parseFloat(manualPnl) || 0;
+                        if (st === 'WIN' && num <= 0) setManualPnl(Math.abs(num || 100).toFixed(2));
+                        if (st === 'LOSS' && num >= 0) setManualPnl((-Math.abs(num || 100)).toFixed(2));
+                        if (st === 'BREAKEVEN') setManualPnl('0.00');
+                        if (st === 'OPEN') setManualPnl('0.00');
+                      }}
+                      className={`flex-1 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer text-center ${colorCls}`}
+                    >
+                      {st}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Real-Time Preview Banner */}
+            {manualPnl !== '' && (
+              <div className="flex items-center justify-between text-xs font-mono-numbers text-slate-300 pt-1 border-t border-slate-800/80 flex-wrap gap-1">
+                <span>
+                  Net P&L: <strong className={finalNetPnl >= 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                    {formatCurrency(finalNetPnl, true, 2, currency)}
+                  </strong>
+                  {invested > 0 && (
+                    <span className="text-slate-400 text-[11px] font-normal ml-1">
+                      ({calculatedRoi >= 0 ? '+' : ''}{calculatedRoi.toFixed(2)}%)
+                    </span>
+                  )}
+                </span>
+                <span className="text-[11px] text-slate-400 font-sans">
                   (≈ {currency === 'INR'
-                      ? formatCurrency(convertCurrency(calculatedNetPnl, 'INR', 'USD', usdToInrRate), true, 2, 'USD')
-                      : formatCurrency(convertCurrency(calculatedNetPnl, 'USD', 'INR', usdToInrRate), true, 2, 'INR')
+                      ? formatCurrency(convertCurrency(finalNetPnl, 'INR', 'USD', usdToInrRate), true, 2, 'USD')
+                      : formatCurrency(convertCurrency(finalNetPnl, 'USD', 'INR', usdToInrRate), true, 2, 'INR')
                     } at 1 USD = ₹{usdToInrRate.toFixed(2)})
                 </span>
               </div>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-bold self-start sm:self-auto ${
-                calculatedStatus === 'WIN' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
-              }`}>
-                {calculatedStatus}
-              </span>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Row 3: Dates */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -507,30 +619,99 @@ export const TradeModal: React.FC<TradeModalProps> = ({
             </div>
           </div>
 
-          {/* Row 5: Playbook Setup */}
+          {/* Row 5: Playbook Setup / Custom Strategy Shortcuts */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Playbook Strategy / Setup</label>
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {setupPresets.map(s => (
+            <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+              <label className="block text-xs font-semibold text-slate-300">
+                Playbook Strategy / Setup
+              </label>
+              {!isAddingStrategy && (
                 <button
                   type="button"
-                  key={s}
-                  onClick={() => setSetup(s)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
-                    setup === s
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                      : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
-                  }`}
+                  onClick={() => setIsAddingStrategy(true)}
+                  className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-0.5 rounded-lg border border-emerald-500/20 transition-all cursor-pointer"
                 >
-                  {s}
+                  <Plus className="w-3 h-3 stroke-[3]" />
+                  <span>+ Add Custom Strategy Shortcut</span>
                 </button>
-              ))}
+              )}
             </div>
+
+            {/* Inline Add Custom Strategy Input */}
+            {isAddingStrategy && (
+              <div className="mb-2.5 p-2.5 bg-[#0c1017] border border-emerald-500/30 rounded-xl flex items-center gap-2">
+                <input
+                  type="text"
+                  autoFocus
+                  value={newStrategyInput}
+                  onChange={e => setNewStrategyInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddStrategy();
+                    } else if (e.key === 'Escape') {
+                      setIsAddingStrategy(false);
+                    }
+                  }}
+                  placeholder="e.g. ICT Silver Bullet, ORB 5M, 9EMA Scalp..."
+                  className="flex-1 bg-[#131824] border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddStrategy}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-colors cursor-pointer shrink-0"
+                >
+                  Save Shortcut
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsAddingStrategy(false)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition-colors shrink-0 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Custom Strategy Shortcut Chips */}
+            {customStrategies.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {customStrategies.map(s => {
+                  const isSelected = setup === s;
+                  return (
+                    <div
+                      key={s}
+                      onClick={() => setSetup(s)}
+                      className={`group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all ${
+                        isSelected
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                          : 'bg-slate-900 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700'
+                      }`}
+                    >
+                      <span>{s}</span>
+                      <button
+                        type="button"
+                        onClick={e => handleRemoveStrategy(s, e)}
+                        title="Delete shortcut"
+                        className="opacity-60 group-hover:opacity-100 hover:text-rose-400 p-0.5 rounded transition-all cursor-pointer"
+                      >
+                        <X className="w-3 h-3 stroke-[2.5]" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-[11px] text-slate-400 mb-2 italic">
+                No custom strategy shortcuts saved yet. Click "+ Add Custom Strategy Shortcut" above to add your setups.
+              </p>
+            )}
+
             <input
               type="text"
               value={setup}
               onChange={e => setSetup(e.target.value)}
-              placeholder="Or type custom setup name..."
+              placeholder="Or type custom strategy name..."
               className="w-full bg-[#0c1017] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
             />
           </div>
